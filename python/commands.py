@@ -213,6 +213,9 @@ def execute_command(campus, message):
             room.manual_mode = True
             room.update_timestamp()
 
+
+            print(f"🔒 Sala {room.room_id} em modo MANUAL")
+
         # ----------------------------------
         # RETURN TO AUTOMATIC SIMULATION
         # ----------------------------------
@@ -224,6 +227,9 @@ def execute_command(campus, message):
 
             room.manual_mode = False
             room.update_timestamp()
+
+
+            print(f"🔄 Sala {room.room_id} em modo AUTOMÁTICO")
 
         # ----------------------------------
         # UNKNOWN COMMAND
