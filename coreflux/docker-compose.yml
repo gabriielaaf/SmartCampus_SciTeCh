@@ -1,0 +1,52 @@
+services:
+  broker:
+    image: ${BROKER_IMAGE:-coreflux/coreflux-mqtt-broker:2.22.0}
+    container_name: smartuni-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9100:9100"
+    volumes:
+      - broker-data:/etc/project
+      - ..:/opt/smartuni:ro
+      - ./templates:/templates:ro
+      - ./exports:/data/exports
+    environment:
+      - COREFLUX_ACTIVATION_CODE=${COREFLUX_ACTIVATION_CODE:-}
+    healthcheck:
+      disable: true
+
+  hub:
+    image: ${HUB_IMAGE:-coreflux/coreflux-hub:2.12.0}
+    container_name: smartuni-hub
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - HUB_DEFAULT_CONNECTION_NAME=Smart Uni
+      - HUB_DEFAULT_CONNECTION_HOST=broker
+      - HUB_DEFAULT_CONNECTION_PROTOCOL=mqtt
+      - HUB_DEFAULT_CONNECTION_PORT=1883
+    volumes:
+      - hub-data:/opt/coreflux-hub/data
+
+  load-project:
+    image: eclipse-mosquitto:2
+    container_name: smartuni-load-project
+    depends_on:
+      - broker
+    restart: "no"
+    volumes:
+      - ./scripts/load-project.sh:/load-project.sh:ro
+    environment:
+      MQTT_HOST: broker
+      MQTT_PORT: "1883"
+      MQTT_USER: root
+      MQTT_PASSWORD: coreflux
+      PROJECT_PATH: /opt/smartuni
+      PROJECT_NAME: smartuni
+    entrypoint: ["/bin/sh", "/load-project.sh"]
+
+volumes:
+  broker-data:
+  hub-data:
