@@ -13,7 +13,7 @@ def create_campus() -> Campus:
             temperature=23.5,
             humidity=48.0,
             co2=780,
-            ac_on=True,
+            ac_mode="ac_cool",
             lights_on=True,
             door_locked=False
         ),
@@ -25,7 +25,7 @@ def create_campus() -> Campus:
             temperature=26.0,
             humidity=53.0,
             co2=1050,
-            ac_on=False,
+            ac_mode="ac_off",
             lights_on=True,
             door_locked=False
         ),
@@ -37,7 +37,7 @@ def create_campus() -> Campus:
             temperature=21.0,
             humidity=45.0,
             co2=420,
-            ac_on=False,
+            ac_mode="ac_off",
             lights_on=False,
             door_locked=True
         ),
@@ -49,7 +49,7 @@ def create_campus() -> Campus:
             temperature=24.5,
             humidity=52.0,
             co2=940,
-            ac_on=True,
+            ac_mode="ac_cool",
             lights_on=True,
             door_locked=False
         ),
@@ -61,7 +61,7 @@ def create_campus() -> Campus:
             temperature=22.0,
             humidity=46.0,
             co2=580,
-            ac_on=False,
+            ac_mode="ac_off",
             lights_on=True,
             door_locked=False
         ),
@@ -73,7 +73,7 @@ def create_campus() -> Campus:
             temperature=28.0,
             humidity=59.0,
             co2=410,
-            ac_on=False,
+            ac_mode="ac_off",
             lights_on=False,
             door_locked=True
         )

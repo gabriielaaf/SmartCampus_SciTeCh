@@ -1,55 +1,47 @@
-import paho.mqtt.client as mqtt
+import json
 
-from config import BROKER, PORT, USERNAME, PASSWORD, COMMAND_TOPIC
-
-
-def on_connect(client, userdata, flags, reason_code, properties):
-    if reason_code.is_failure:
-        print("❌ Subscriber connection failed:", reason_code)
-        return
-
-    print("✅ Subscriber connected to Coreflux!")
-
-    client.subscribe(COMMAND_TOPIC, qos=1)
-
-    print(f"📡 Listening to: {COMMAND_TOPIC}")
+from config import COMMAND_TOPIC
 
 
-def on_message(client, userdata, msg):
-    command = msg.payload.decode()
+class MQTTSubscriber:
 
-    print(f"📩 Coreflux command: {command}", flush=True)
+    def __init__(self, client, command_queue):
+        self.client = client
+        self.command_queue = command_queue
 
-    if command == "AC_ON":
-        print("❄️ Air conditioning ON")
+        self.client.on_message = self.on_message
 
-    elif command == "AC_OFF":
-        print("🌡️ Air conditioning OFF")
+    def subscribe(self):
+        self.client.subscribe(COMMAND_TOPIC, qos=1)
 
-    elif command == "LIGHTS_ON":
-        print("💡 Lights ON")
+        print(f"📡 Listening to: {COMMAND_TOPIC}")
 
-    elif command == "LIGHTS_OFF":
-        print("💡 Lights OFF")
+    def on_message(self, client, userdata, msg):
+        try:
+            # Expected topic: campus/rooms/B101/commands
+            parts = msg.topic.split("/")
 
-    elif command == "DOOR_LOCK":
-        print("🔒 Door locked")
+            if len(parts) != 4 or parts[3] != "commands":
+                print(f"❌ Unexpected topic: {msg.topic}")
+                return
 
+            room_id = parts[2]
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+            command = json.loads(msg.payload.decode())
 
-client.username_pw_set(USERNAME, PASSWORD)
+            if not isinstance(command, dict):
+                print("❌ Command must be a JSON object")
+                return
 
-client.on_connect = on_connect
-client.on_message = on_message
+            self.command_queue.put({
+                "room_id": room_id,
+                "device": command.get("device"),
+                "value": command.get("value"),
+                "reason": command.get("reason")
+            })
 
-try:
-    client.connect(BROKER, PORT, 60)
-    client.loop_forever()
+            print(f"📩 Received command for {room_id}: {command}")
 
-except KeyboardInterrupt:
-    print("\nSubscriber stopped.")
-
-finally:
-    client.disconnect()
-    
+        except (ValueError, UnicodeDecodeError) as error:
+            print(f"❌ Invalid MQTT message: {error}")
+            

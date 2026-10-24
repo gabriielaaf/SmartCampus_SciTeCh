@@ -1,44 +1,72 @@
 import json
-import time
 import paho.mqtt.client as mqtt
 
-from config import BROKER, PORT, USERNAME, PASSWORD, SENSOR_TOPIC
-from generator import generate_sensor_data
+from config import SENSOR_TOPIC
 
 
-def on_connect(client, userdata, flags, reason_code, properties):
-    if reason_code.is_failure:
-        print("❌ Publisher connection failed:", reason_code)
-    else:
-        print("✅ Publisher connected to Coreflux!")
+class MQTTPublisher:
 
+    def __init__(self, client, campus):
+        self.client = client
+        self.campus = campus
+        self.last_published = {}
 
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    def reset(self):
+        """
+        Force all classrooms to be published again.
+        Useful after MQTT reconnects.
+        """
+        self.last_published.clear()
 
-client.username_pw_set(USERNAME, PASSWORD)
+    def publish_changed_rooms(self):
+        """
+        Publish only classrooms whose state changed.
+        """
 
-client.on_connect = on_connect
+        if not self.client.is_connected():
+            return
 
-try:
-    client.connect(BROKER, PORT, 60)
-    client.loop_start()
+        for room in self.campus.get_all_rooms():
 
-    while True:
-        data = generate_sensor_data()
+            current_state = room.get_state()
 
-        message = json.dumps(data)
+            # Remove timestamp from MQTT data
+            # The timestamp remains in the Classroom object
+            current_state.pop("last_updated", None)
 
-        result = client.publish(SENSOR_TOPIC, message, qos=1)
-        result.wait_for_publish()
+            previous_state = self.last_published.get(room.room_id)
 
-        print("📤 Sent:", message, flush=True)
+            # Publish only if something changed
+            if current_state == previous_state:
+                continue
 
-        time.sleep(2)
+            topic = f"{SENSOR_TOPIC}/{room.room_id}/state"
+            message = json.dumps(current_state)
 
-except KeyboardInterrupt:
-    print("\nPublisher stopped.")
+            result = self.client.publish(
+                topic,
+                message,
+                qos=1,
+                retain=True
+            )
 
-finally:
-    client.disconnect()
-    client.loop_stop()
-    
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
+                print(f"❌ Failed to publish {room.room_id}")
+                continue
+
+            try:
+                result.wait_for_publish(timeout=5)
+            except (RuntimeError, ValueError) as error:
+                print(f"❌ Publish error for {room.room_id}: {error}")
+                continue
+
+            if not result.is_published():
+                print(f"⚠️ Publication not confirmed: {room.room_id}")
+                continue
+
+            self.last_published[room.room_id] = current_state.copy()
+
+            print(
+                f"📤 Published {room.room_id}: {message}",
+                flush=True
+            )

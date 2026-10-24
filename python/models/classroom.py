@@ -15,12 +15,17 @@ class Classroom:
     # Ocupação
     people_count: int = 0
 
-    # Atuadores existentes
-    ac_on: bool = False
+
+    # Actuators
+    ac_mode: str = "ac_off"
     lights_on: bool = False
     door_locked: bool = False
 
-    # Configuração
+    # Alarm
+    alarm_on: bool = False
+    alarm_reason: str | None = None
+
+    # Configuration
     target_temperature: float = 22.0
 
     # Novos atributos
@@ -105,34 +110,19 @@ class Classroom:
     # AIR CONDITIONING
     # ========================================================
 
-    def set_ac(self, enabled: bool):
-        """
-        Método antigo, mantido para compatibilidade.
-        """
 
-        self.set_ac_mode(
-            "cool" if enabled and self.ac_mode == "off"
-            else self.ac_mode if enabled
-            else "off"
-        )
+    def set_ac(self, mode: str):
+        valid_modes = {"ac_cool", "ac_heat", "ac_off"}
 
-    def set_ac_mode(self, mode: str):
-        """
-        Define o modo de funcionamento:
-        - off: desligado
-        - cool: frio
-        - heat: quente
-        """
-
-        if mode not in ("off", "cool", "heat"):
+        if mode not in valid_modes:
             raise ValueError(
-                "AC mode must be off, cool or heat"
+                f"Invalid AC mode: {mode}. "
+                f"Expected one of: {', '.join(sorted(valid_modes))}"
             )
 
-        self.ac_mode = mode
-        self.ac_on = mode != "off"
-
-        self.update_timestamp()
+        if self.ac_mode != mode:
+            self.ac_mode = mode
+            self.update_timestamp()
 
     # ========================================================
     # LIGHTS
@@ -154,8 +144,17 @@ class Classroom:
         self.door_locked = bool(enabled)
         self.door_closed = self.door_locked
         self.update_timestamp()
-       
-    # ========================================================
+
+    # ------------------------
+    # ALARM
+    # ------------------------
+
+    def set_alarm(self, enabled: bool, reason: str | None = None):
+        self.alarm_on = enabled
+        self.alarm_reason = (reason or "Unknown alarm") if enabled else None
+        self.update_timestamp()
+
+    # ------------------------
     # CONFIGURATION
     # ========================================================
 
@@ -183,16 +182,13 @@ class Classroom:
             "co2": self.co2,
             "people_count": self.people_count,
 
-            "ac_on": self.ac_on,
-            "ac_mode": (
-                self.ac_mode if self.ac_on else "off"
-            ),
-
+            "ac_mode": self.ac_mode,
             "lights_on": self.lights_on,
 
             "door_locked": self.door_locked,
             "door_closed": self.door_closed,
-
+            "alarm_on": self.alarm_on,
+            "alarm_reason": self.alarm_reason,
             "target_temperature": self.target_temperature,
             "last_updated": self.last_updated,
         }
