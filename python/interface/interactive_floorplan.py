@@ -47,6 +47,12 @@ _floorplan_component = st.components.v2.component(
             font-size: 13px;
             margin: 6px 0 0;
         }
+        .sc-stage,
+        .sc-stage * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
     """,
 
     # ========================================================
