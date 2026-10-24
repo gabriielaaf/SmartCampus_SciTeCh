@@ -18,6 +18,7 @@ class Classroom:
 
     # Actuators
     ac_mode: str = "ac_off"
+    ac_on: bool = False
     lights_on: bool = False
     door_locked: bool = False
 
@@ -29,7 +30,6 @@ class Classroom:
     target_temperature: float = 22.0
 
     # Novos atributos
-    ac_mode: str = "off"     # off, cool, heat
     door_closed: bool = False
 
     last_updated: str = field(
@@ -46,19 +46,25 @@ class Classroom:
         if not 0 <= self.people_count <= self.capacity:
             raise ValueError("Occupancy exceeds room capacity")
 
-        if self.ac_mode not in ("off", "cool", "heat"):
-            raise ValueError(
-                "AC mode must be off, cool or heat"
-            )
+        # Validar e normalizar os modos do AC
+        aliases = {
+            "off": "ac_off",
+            "cool": "ac_cool",
+            "heat": "ac_heat",
+        }
 
-        # Compatibilidade com objetos antigos
-        if self.ac_on and self.ac_mode == "off":
-            self.ac_mode = "cool"
+        self.ac_mode = aliases.get(self.ac_mode, self.ac_mode)
 
-        if self.ac_mode != "off":
-            self.ac_on = True
+        if self.ac_mode not in ("ac_off", "ac_cool", "ac_heat"):
+            raise ValueError("Invalid AC mode")
 
-        # Uma porta trancada tem de estar fechada
+        # Compatibilidade com populate.py
+        if self.ac_on and self.ac_mode == "ac_off":
+            self.ac_mode = "ac_cool"
+
+        self.ac_on = self.ac_mode != "ac_off"
+
+        # Porta: apenas aberta ou trancada
         self.door_closed = self.door_locked
 
     def update_timestamp(self):
@@ -122,6 +128,7 @@ class Classroom:
 
         if self.ac_mode != mode:
             self.ac_mode = mode
+            self.ac_on = mode != "ac_off"
             self.update_timestamp()
 
     # ========================================================

@@ -116,10 +116,7 @@ def show_building_live():
                     f"CO₂ {room.co2:.0f} ppm"
                 )
 
-                mode = (
-                    room.ac_mode
-                    if room.ac_on else "off"
-                )
+                mode = room.ac_mode.removeprefix("ac_")
 
                 ac_label = {
                     "off": "Desligado",
@@ -265,10 +262,7 @@ def show_room_live(room_id):
     )
 
     # Ar condicionado
-    mode = (
-        room.ac_mode
-        if room.ac_on else "off"
-    )
+    mode = room.ac_mode.removeprefix("ac_")
 
     ac_label = {
         "off": "Desligado",

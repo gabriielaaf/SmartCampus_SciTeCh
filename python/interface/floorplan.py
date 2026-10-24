@@ -93,7 +93,7 @@ def draw_floorplan(room) -> str:
     lights = bool(room.lights_on)
 
     # Compatibilidade com código que ainda usa ac_on
-    mode = room.ac_mode if room.ac_on else "off"
+    mode = room.ac_mode.removeprefix("ac_")
 
     if room.ac_on and mode == "off":
         mode = "cool"
