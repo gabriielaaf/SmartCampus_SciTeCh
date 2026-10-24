@@ -30,16 +30,14 @@ class MQTTPublisher:
 
             current_state = room.get_state()
 
-            # Ignore timestamp when detecting changes
-            comparable_state = {
-                key: value
-                for key, value in current_state.items()
-                if key != "last_updated"
-            }
+            # Remove timestamp from MQTT data
+            # The timestamp remains in the Classroom object
+            current_state.pop("last_updated", None)
 
             previous_state = self.last_published.get(room.room_id)
 
-            if comparable_state == previous_state:
+            # Publish only if something changed
+            if current_state == previous_state:
                 continue
 
             topic = f"{SENSOR_TOPIC}/{room.room_id}/state"
@@ -66,7 +64,7 @@ class MQTTPublisher:
                 print(f"⚠️ Publication not confirmed: {room.room_id}")
                 continue
 
-            self.last_published[room.room_id] = comparable_state.copy()
+            self.last_published[room.room_id] = current_state.copy()
 
             print(
                 f"📤 Published {room.room_id}: {message}",
