@@ -17,7 +17,7 @@ class Classroom:
     people_count: int = 0
 
     # Actuators
-    ac_on: bool = False
+    ac_mode: str = "ac_off"
     lights_on: bool = False
     door_locked: bool = False
 
@@ -53,9 +53,18 @@ class Classroom:
     # ACTUATORS
     # ------------------------
 
-    def set_ac(self, enabled: bool):
-        self.ac_on = enabled
-        self.update_timestamp()
+    def set_ac(self, mode: str):
+        valid_modes = {"ac_cool", "ac_heat", "ac_off"}
+
+        if mode not in valid_modes:
+            raise ValueError(
+                f"Invalid AC mode: {mode}. "
+                f"Expected one of: {', '.join(sorted(valid_modes))}"
+            )
+
+        if self.ac_mode != mode:
+            self.ac_mode = mode
+            self.update_timestamp()
 
     def set_lights(self, enabled: bool):
         self.lights_on = enabled
@@ -99,7 +108,7 @@ class Classroom:
             "humidity": self.humidity,
             "co2": self.co2,
             "people_count": self.people_count,
-            "ac_on": self.ac_on,
+            "ac_mode": self.ac_mode,
             "lights_on": self.lights_on,
             "door_locked": self.door_locked,
             "alarm_on": self.alarm_on,

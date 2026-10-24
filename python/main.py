@@ -26,7 +26,8 @@ def apply_command(campus, command):
         return
 
     try:
-        if device == "ac" and type(value) is bool:
+        # AC MODES
+        if device == "ac" and value in ("ac_cool", "ac_heat", "ac_off"):
             room.set_ac(value)
 
         elif device == "lights" and type(value) is bool:
