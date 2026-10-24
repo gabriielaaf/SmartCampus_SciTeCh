@@ -8,57 +8,7 @@ from populate import create_campus
 from generator import Generator
 from publisher import MQTTPublisher
 from subscriber import MQTTSubscriber
-
-
-def apply_command(campus, command):
-    """
-    Apply an MQTT command to the correct classroom.
-    """
-
-    room_id = command["room_id"]
-    device = command["device"]
-    value = command["value"]
-
-    room = campus.get_room(room_id)
-
-    if room is None:
-        print(f"❌ Unknown classroom: {room_id}")
-        return
-
-    try:
-        # AC MODES
-        if device == "ac" and value in ("ac_cool", "ac_heat", "ac_off"):
-            room.set_ac(value)
-
-        elif device == "lights" and type(value) is bool:
-            room.set_lights(value)
-
-        elif device == "door_lock" and type(value) is bool:
-            room.set_door_lock(value)
-
-        elif device == "alarm" and type(value) is bool:
-            reason = command.get("reason")
-
-            if reason is not None and not isinstance(reason, str):
-                print("❌ Invalid alarm reason")
-                return
-
-            room.set_alarm(value, reason)
-
-        elif device == "target_temperature" and type(value) in (int, float):
-            room.set_target_temperature(value)
-
-        elif device == "people_count" and type(value) is int:
-            room.set_people(value)
-
-        else:
-            print(f"❌ Invalid command: {command}")
-            return
-
-        print(f"✅ {room_id}: {device} = {value}")
-
-    except ValueError as error:
-        print(f"❌ Invalid value: {error}")
+from commands import execute_command
 
 
 def main():
@@ -67,10 +17,13 @@ def main():
     # CAMPUS
     # ---------------------------------
 
+    # Create the campus and its six classrooms
     campus = create_campus()
 
+    # Generator updates the existing classroom objects
     generator = Generator(campus)
 
+    # Incoming MQTT commands are stored here
     command_queue = Queue()
 
     # ---------------------------------
@@ -83,21 +36,29 @@ def main():
 
     client.username_pw_set(USERNAME, PASSWORD)
 
+    # Publisher and subscriber use the same MQTT client
     publisher = MQTTPublisher(client, campus)
     subscriber = MQTTSubscriber(client, command_queue)
+
+    # ---------------------------------
+    # MQTT CALLBACKS
+    # ---------------------------------
 
     def on_connect(client, userdata, flags, reason_code, properties):
 
         if reason_code.is_failure:
-            print("❌ Connection to Coreflux failed:", reason_code)
+            print(
+                "❌ Connection to Coreflux failed:",
+                reason_code
+            )
             return
 
         print("✅ Connected to Coreflux!")
 
-        # Subscribe to classroom commands
+        # Subscribe to commands on every connection
         subscriber.subscribe()
 
-        # Publish all rooms after connecting or reconnecting
+        # Force all classrooms to publish their current state
         publisher.reset()
 
     def on_disconnect(client, userdata, flags, reason_code, properties):
@@ -110,28 +71,30 @@ def main():
     # START CONNECTION
     # ---------------------------------
 
-    client.connect(BROKER, PORT, 60)
-    client.loop_start()
-
-    print("🚀 Smart Campus started!")
-
-    # ---------------------------------
-    # MAIN LOOP
-    # ---------------------------------
-
     try:
+        client.connect(BROKER, PORT, 60)
+        client.loop_start()
+
+        print("🚀 Smart Campus started!")
+
+        # ---------------------------------
+        # MAIN LOOP
+        # ---------------------------------
+
         while True:
 
-            # 1. Process commands received from Coreflux
+            # 1. Process incoming Coreflux commands
             while True:
                 try:
                     command = command_queue.get_nowait()
+
                 except Empty:
                     break
 
-                apply_command(campus, command)
+                # Validate command and update Classroom
+                execute_command(campus, command)
 
-            # 2. Update simulated classroom sensors
+            # 2. Update simulated sensor values
             generator.update()
 
             # 3. Publish classrooms whose state changed
