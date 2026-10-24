@@ -21,6 +21,10 @@ class Classroom:
     lights_on: bool = False
     door_locked: bool = False
 
+    # Alarm
+    alarm_on: bool = False
+    alarm_reason: str | None = None
+
     # Configuration
     target_temperature: float = 22.0
 
@@ -62,6 +66,15 @@ class Classroom:
         self.update_timestamp()
 
     # ------------------------
+    # ALARM
+    # ------------------------
+
+    def set_alarm(self, enabled: bool, reason: str | None = None):
+        self.alarm_on = enabled
+        self.alarm_reason = (reason or "Unknown alarm") if enabled else None
+        self.update_timestamp()
+
+    # ------------------------
     # CONFIGURATION
     # ------------------------
 
@@ -89,6 +102,8 @@ class Classroom:
             "ac_on": self.ac_on,
             "lights_on": self.lights_on,
             "door_locked": self.door_locked,
+            "alarm_on": self.alarm_on,
+            "alarm_reason": self.alarm_reason,
             "target_temperature": self.target_temperature,
             "last_updated": self.last_updated,
         }

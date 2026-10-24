@@ -1,68 +1,74 @@
 import json
-import time
 import paho.mqtt.client as mqtt
 
-from config import BROKER, PORT, USERNAME, PASSWORD, SENSOR_TOPIC
-from generator import Generator
-from populate import create_campus
+from config import SENSOR_TOPIC
 
 
-def on_connect(client, userdata, flags, reason_code, properties):
-    if reason_code.is_failure:
-        print("❌ Publisher connection failed:", reason_code)
-    else:
-        print("✅ Publisher connected to Coreflux!")
+class MQTTPublisher:
 
+    def __init__(self, client, campus):
+        self.client = client
+        self.campus = campus
+        self.last_published = {}
 
-# Create the campus with its 6 classrooms
-campus = create_campus()
+    def reset(self):
+        """
+        Force all classrooms to be published again.
+        Useful after MQTT reconnects.
+        """
+        self.last_published.clear()
 
-# Create the generator using the same campus
-generator = Generator(campus)
+    def publish_changed_rooms(self):
+        """
+        Publish only classrooms whose state changed.
+        """
 
-# MQTT client
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        if not self.client.is_connected():
+            return
 
-client.username_pw_set(USERNAME, PASSWORD)
-client.on_connect = on_connect
+        for room in self.campus.get_all_rooms():
 
-try:
-    client.connect(BROKER, PORT, 60)
-    client.loop_start()
+            current_state = room.get_state()
 
-    # Wait until MQTT connection is established
-    while not client.is_connected():
-        time.sleep(0.1)
+            # Ignore timestamp when detecting changes
+            comparable_state = {
+                key: value
+                for key, value in current_state.items()
+                if key != "last_updated"
+            }
 
-    # Publish initial state of all 6 classrooms
-    for room in campus.get_all_rooms():
-        topic = f"{SENSOR_TOPIC}/{room.room_id}/state"
-        message = json.dumps(room.get_state())
+            previous_state = self.last_published.get(room.room_id)
 
-        result = client.publish(topic, message, qos=1)
-        result.wait_for_publish()
+            if comparable_state == previous_state:
+                continue
 
-        print(f"📤 Initial state {room.room_id}: {message}")
-
-    while True:
-        # Update the simulation
-        changed_rooms = generator.update()
-
-        # Publish only rooms that changed
-        for room in changed_rooms:
             topic = f"{SENSOR_TOPIC}/{room.room_id}/state"
-            message = json.dumps(room.get_state())
+            message = json.dumps(current_state)
 
-            result = client.publish(topic, message, qos=1)
-            result.wait_for_publish()
+            result = self.client.publish(
+                topic,
+                message,
+                qos=1,
+                retain=True
+            )
 
-            print(f"📤 Updated {room.room_id}: {message}", flush=True)
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
+                print(f"❌ Failed to publish {room.room_id}")
+                continue
 
-        time.sleep(2)
+            try:
+                result.wait_for_publish(timeout=5)
+            except (RuntimeError, ValueError) as error:
+                print(f"❌ Publish error for {room.room_id}: {error}")
+                continue
 
-except KeyboardInterrupt:
-    print("\nPublisher stopped.")
+            if not result.is_published():
+                print(f"⚠️ Publication not confirmed: {room.room_id}")
+                continue
 
-finally:
-    client.disconnect()
-    client.loop_stop()
+            self.last_published[room.room_id] = comparable_state.copy()
+
+            print(
+                f"📤 Published {room.room_id}: {message}",
+                flush=True
+            )
