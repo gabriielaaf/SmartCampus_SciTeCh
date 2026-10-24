@@ -12,6 +12,10 @@ class Generator:
         changed_rooms = []
 
         for room in self.campus.get_all_rooms():
+
+            if room.manual_mode:
+                continue
+            
             old_state = (
                 room.people_count,
                 room.temperature,

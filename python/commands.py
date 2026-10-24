@@ -169,6 +169,63 @@ def execute_command(campus, message):
             room.set_people(count)
 
         # ----------------------------------
+        # SET_ROOM_VALUES
+        # ----------------------------------
+
+        elif command == "SET_ROOM_VALUES":
+
+            required = {
+                "count",
+                "temperature",
+                "humidity",
+                "co2",
+            }
+
+            if set(params) != required:
+                raise ValueError("Invalid room values parameters")
+
+            count = params["count"]
+            temperature = params["temperature"]
+            humidity = params["humidity"]
+            co2 = params["co2"]
+
+            if type(count) is not int or not 0 <= count <= room.capacity:
+                raise ValueError("Invalid occupancy")
+
+            for value in (temperature, humidity, co2):
+                if type(value) not in (int, float) or not math.isfinite(value):
+                    raise ValueError("Sensor values must be finite numbers")
+
+            if not -10 <= temperature <= 50:
+                raise ValueError("Temperature must be between -10 and 50°C")
+
+            if not 0 <= humidity <= 100:
+                raise ValueError("Humidity must be between 0 and 100%")
+
+            if not 0 <= co2 <= 10000:
+                raise ValueError("CO2 must be between 0 and 10000 ppm")
+
+            room.set_people(count)
+            room.set_temperature(temperature)
+            room.set_humidity(humidity)
+            room.set_co2(co2)
+
+            room.manual_mode = True
+            room.update_timestamp()
+
+        # ----------------------------------
+        # RETURN TO AUTOMATIC SIMULATION
+        # ----------------------------------
+
+        elif command == "SET_ROOM_AUTO":
+
+            if params:
+                raise ValueError("SET_ROOM_AUTO requires empty params")
+
+            room.manual_mode = False
+            room.update_timestamp()
+
+        # ----------------------------------
         # UNKNOWN COMMAND
         # ----------------------------------
 
