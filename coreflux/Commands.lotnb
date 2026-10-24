@@ -1,0 +1,27 @@
+[
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE MODEL AcParams COLLAPSED\n    ADD STRING \"mode\""
+  },
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE MODEL LightsParams COLLAPSED\n    ADD BOOL \"enabled\""
+  },
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE MODEL SetAcCommand COLLAPSED\n    ADD STRING \"command\"\n    ADD STRING \"room_id\"\n    ADD MODEL AcParams \"params\""
+  },
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE MODEL SetLightsCommand COLLAPSED\n    ADD STRING \"command\"\n    ADD STRING \"room_id\"\n    ADD MODEL LightsParams \"params\""
+  },
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE ACTION ControlRoom\nON TOPIC \"campus/rooms/+/state\" DO\n    SET \"room_id\" WITH (GET JSON \"room_id\" IN PAYLOAD AS STRING)\n    SET \"people\" WITH (GET JSON \"people_count\" IN PAYLOAD AS INT)\n    SET \"temperature\" WITH (GET JSON \"temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"target\" WITH (GET JSON \"target_temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"ac_mode\" WITH (GET JSON \"ac_mode\" IN PAYLOAD AS STRING)\n    SET \"lights\" WITH (GET JSON \"lights_on\" IN PAYLOAD AS BOOL)\n    SET \"empty_seconds\" WITH (GET TOPIC \"campus/internal/+/empty_seconds\" AS DOUBLE)\n\n    SET \"margin\" WITH 2.0\n    SET \"idle_limit\" WITH 600.0\n    SET \"hot_limit\" WITH ({target} + {margin})\n    SET \"cold_limit\" WITH ({target} - {margin})\n\n    IF {people} > 0 THEN\n        IF {lights} == FALSE THEN\n            PUBLISH MODEL SetLightsCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                command = \"SET_LIGHTS\"\n                room_id = {room_id}\n                params.enabled = TRUE\n\n        IF {temperature} > {hot_limit} THEN\n            IF {ac_mode} != \"ac_cool\" THEN\n                PUBLISH MODEL SetAcCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                    command = \"SET_AC\"\n                    room_id = {room_id}\n                    params.mode = \"ac_cool\"\n        ELSE IF {temperature} < {cold_limit} THEN\n            IF {ac_mode} != \"ac_heat\" THEN\n                PUBLISH MODEL SetAcCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                    command = \"SET_AC\"\n                    room_id = {room_id}\n                    params.mode = \"ac_heat\"\n        ELSE\n            IF {ac_mode} == \"ac_cool\" THEN\n                IF {temperature} <= {target} THEN\n                    PUBLISH MODEL SetAcCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                        command = \"SET_AC\"\n                        room_id = {room_id}\n                        params.mode = \"ac_off\"\n            IF {ac_mode} == \"ac_heat\" THEN\n                IF {temperature} >= {target} THEN\n                    PUBLISH MODEL SetAcCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                        command = \"SET_AC\"\n                        room_id = {room_id}\n                        params.mode = \"ac_off\"\n    ELSE\n        IF {empty_seconds} >= {idle_limit} THEN\n            IF {ac_mode} != \"ac_off\" THEN\n                PUBLISH MODEL SetAcCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                    command = \"SET_AC\"\n                    room_id = {room_id}\n                    params.mode = \"ac_off\"\n            IF {lights} == TRUE THEN\n                PUBLISH MODEL SetLightsCommand TO (\"campus/rooms/\" + {room_id} + \"/commands\") WITH\n                    command = \"SET_LIGHTS\"\n                    room_id = {room_id}\n                    params.enabled = FALSE"
+  }
+]
