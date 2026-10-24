@@ -458,9 +458,7 @@ def render_interactive_floorplan(room, campus):
             "ac_heat"
         ):
 
-            current.set_ac_mode(
-                action[3:]
-            )
+            current.set_ac(action)
 
         # -----------------------------------------------
         # DOOR
