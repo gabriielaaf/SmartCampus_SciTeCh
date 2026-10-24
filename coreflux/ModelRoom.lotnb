@@ -2,11 +2,16 @@
   {
     "kind": 2,
     "language": "lot",
-    "value": "DEFINE MODEL AcReading COLLAPSED\n    ADD STRING \"room_id\"\n    ADD DOUBLE \"temperature_c\"\n    ADD DOUBLE \"target_temperature_c\"\n    ADD INTEGER \"people_count\"\n    ADD STRING \"ac_mode\"\n    ADD STRING \"timestamp\""
+    "value": "DEFINE MODEL RoomState COLLAPSED\n    ADD STRING \"room_id\"\n    ADD INT \"people_count\"\n    ADD DOUBLE \"temperature_c\"\n    ADD DOUBLE \"co2\"\n    ADD INT \"empty_seconds\""
   },
   {
     "kind": 2,
     "language": "lot",
-    "value": "DEFINE ACTION ProcessAcReading\nON TOPIC \"campus/rooms/+/state\" DO\n    SET \"room_id\" WITH (GET JSON \"room_id\" IN PAYLOAD AS STRING)\n    SET \"temperature\" WITH (GET JSON \"temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"target\" WITH (GET JSON \"target_temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"people\" WITH (GET JSON \"people_count\" IN PAYLOAD AS INT)\n    SET \"ac_mode\" WITH (GET JSON \"ac_mode\" IN PAYLOAD AS STRING)\n    \n    PUBLISH MODEL AcReading TO (\"campus/reading/ac/\" + {room_id}) WITH\n        room_id = {room_id}\n        temperature_c = {temperature}\n        target_temperature_c = {target}\n        people_count = {people}\n        ac_mode = {ac_mode}\n        timestamp = TIMESTAMP \"UTC\"\n    "
+    "value": "DEFINE MODEL DeviceState COLLAPSED\n    ADD STRING \"room_id\"\n    ADD STRING \"ac_mode\"\n    ADD DOUBLE \"target_temperature_c\"\n    ADD BOOL \"lights_on\"\n    ADD BOOL \"door_locked\""
+  },
+  {
+    "kind": 2,
+    "language": "lot",
+    "value": "DEFINE ACTION TrackRoom\nON TOPIC \"campus/rooms/+/state\" DO\n    SET \"room_id\" WITH (GET JSON \"room_id\" IN PAYLOAD AS STRING)\n    SET \"now\" WITH TIMESTAMP \"UNIX\"\n    SET \"people\" WITH (GET JSON \"people_count\" IN PAYLOAD AS INT)\n    SET \"temperature\" WITH (GET JSON \"temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"co2\" WITH (GET JSON \"co2\" IN PAYLOAD AS DOUBLE)\n    SET \"ac_mode\" WITH (GET JSON \"ac_mode\" IN PAYLOAD AS STRING)\n    SET \"target\" WITH (GET JSON \"target_temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"lights\" WITH (GET JSON \"lights_on\" IN PAYLOAD AS BOOL)\n    SET \"door\" WITH (GET JSON \"door_locked\" IN PAYLOAD AS BOOL)\n\n    IF {people} > 0 THEN\n        KEEP TOPIC \"campus/internal/\" + {room_id} + \"/last_occupied\" WITH {now}\n        SET \"empty_seconds\" WITH 0\n    ELSE\n        IF GET TOPIC (\"campus/internal/\" + {room_id} + \"/last_occupied\") == EMPTY THEN\n            KEEP TOPIC \"campus/internal/\" + {room_id} + \"/last_occupied\" WITH {now}\n            SET \"empty_seconds\" WITH 0\n        ELSE\n            SET \"last_seen\" WITH (GET TOPIC (\"campus/internal/\" + {room_id} + \"/last_occupied\") AS INT)\n            SET \"empty_seconds\" WITH ({now} - {last_seen})\n\n    PUBLISH MODEL RoomState TO (\"campus/derived/\" + {room_id} + \"/room\") WITH\n        room_id = {room_id}\n        people_count = {people}\n        temperature_c = {temperature}\n        co2 = {co2}\n        empty_seconds = {empty_seconds}\n\n    PUBLISH MODEL DeviceState TO (\"campus/derived/\" + {room_id} + \"/device\") WITH\n        room_id = {room_id}\n        ac_mode = {ac_mode}\n        target_temperature_c = {target}\n        lights_on = {lights}\n        door_locked = {door}\n    "
   }
 ]
