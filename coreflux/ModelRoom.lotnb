@@ -2,11 +2,11 @@
   {
     "kind": 2,
     "language": "lot",
-    "value": "DEFINE MODEL AcReading COLLAPSED\n    ADD STRING \"room_id\"\n    ADD DOUBLE \"temperature_c\"\n    ADD DOUBLE \"target_temp\"\n    ADD INTEGER \"people_count\"\n    ADD STRING \"timestamp\""
+    "value": "DEFINE MODEL AcReading COLLAPSED\n    ADD STRING \"room_id\"\n    ADD DOUBLE \"temperature_c\"\n    ADD DOUBLE \"target_temp\"\n    ADD INTEGER \"people_count\"\n    ADD STRING \"timestamp\"\n    ADD STRING \"ac_on\""
   },
   {
     "kind": 2,
     "language": "lot",
-    "value": "DEFINE ACTION ProcessAcReading\nON TOPIC \"campus/rooms/+/state\" DO\n    SET \"room_id\" WITH TOPIC POSITION 3\n    SET \"temperature\" WITH (GET JSON \"temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"target\" WITH (GET JSON \"target_temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"people\" WITH (GET JSON \"people_count\" IN PAYLOAD AS INT)\n\n    IF {people} > 0 THEN\n        IF {temperature} > {target} THEN\n            PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_ON\"\n        ELSE\n            PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_OFF\"\n    ELSE\n        PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_OFF\"\n    "
+    "value": "DEFINE ACTION ProcessAcReading\nON TOPIC \"campus/rooms/+/state\" DO\n    SET \"room_id\" WITH (GET JSON \"room_id\" IN PAYLOAD AS STRING)\n    SET \"temperature\" WITH (GET JSON \"temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"target\" WITH (GET JSON \"target_temperature\" IN PAYLOAD AS DOUBLE)\n    SET \"people\" WITH (GET JSON \"people_count\" IN PAYLOAD AS INT)\n\n    IF {people} > 0 THEN\n        IF {temperature} > {target} THEN\n            PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_COOL\"\n        ELSE IF {temperature} < {target} THEN\n            PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_HEAT\"\n        ELSE\n            PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_OFF\"\n    ELSE\n        PUBLISH TOPIC \"campus/rooms/\" + {room_id} + \"/ac/command\" WITH \"AC_OFF\"\n    "
   }
 ]
