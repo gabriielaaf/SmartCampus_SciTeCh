@@ -4,7 +4,11 @@ import random
 def update_occupancy(room):
     """Simulate people entering or leaving a classroom."""
 
-    # 20% chance of a change each simulation cycle
+    # Locked door: nobody enters or leaves
+    if room.door_locked:
+        return
+
+    # 20% chance of occupancy changing per cycle
     if random.random() > 0.20:
         return
 

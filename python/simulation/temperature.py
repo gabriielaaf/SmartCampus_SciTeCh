@@ -3,11 +3,10 @@ def update_temperature(room):
     Simulate classroom temperature.
 
     Rules:
-    - Occupants contribute to room heating.
-    - AC OFF: temperature approaches ambient conditions.
-    - AC COOL: temperature decreases toward the selected target.
-    - AC HEAT: temperature increases toward the selected target.
-    - Natural environmental effects continue while AC is operating.
+    - AC OFF: temperature approaches ambient + occupant heat.
+    - AC COOL: temperature decreases toward the target.
+    - AC HEAT: temperature increases toward the target.
+    - AC never moves temperature in the wrong direction.
     """
 
     # ----------------------------------
@@ -16,78 +15,52 @@ def update_temperature(room):
 
     AMBIENT_TEMPERATURE = 23.0
 
-    # Accelerated rates for the hackathon simulation
+    # Accelerated rates for the simulation
     NATURAL_RATE = 0.08
     AC_RATE = 0.30
 
     # ----------------------------------
-    # CALCULATE NATURAL TEMPERATURE
+    # TEMPERATURE VALUES
     # ----------------------------------
-
-    people_heat = room.people_count * 0.04
-
-    natural_target = AMBIENT_TEMPERATURE + people_heat
 
     current = room.temperature
     target = room.target_temperature
 
-    natural_change = (
-        natural_target - current
-    ) * NATURAL_RATE
+    people_heat = room.people_count * 0.04
+    natural_target = AMBIENT_TEMPERATURE + people_heat
 
     # ----------------------------------
     # AC OFF
     # ----------------------------------
 
     if room.ac_mode == "ac_off":
-
-        new_temperature = current + natural_change
+        new_temperature = current + (
+            natural_target - current
+        ) * NATURAL_RATE
 
     # ----------------------------------
-    # AC COOLING
+    # AC COOL
     # ----------------------------------
 
     elif room.ac_mode == "ac_cool":
-
         if current > target:
-            ac_change = (target - current) * AC_RATE
-
-            # Cooling counteracts natural environmental heating
-            new_temperature = current + min(
-                0,
-                natural_change + ac_change
-            )
-
-            # Do not cool below the target
-            new_temperature = max(target, new_temperature)
-
+            new_temperature = current + (
+                target - current
+            ) * AC_RATE
         else:
-            # Cooling cannot actively heat
-            new_temperature = current + max(0, natural_change)
-            new_temperature = min(target, new_temperature)
+            new_temperature = current
 
     # ----------------------------------
-    # AC HEATING
+    # AC HEAT
     # ----------------------------------
 
     elif room.ac_mode == "ac_heat":
-
         if current < target:
-            ac_change = (target - current) * AC_RATE
-
-            # Heating counteracts natural environmental cooling
-            new_temperature = current + max(
-                0,
-                natural_change + ac_change
-            )
-
-            # Do not heat above the target
-            new_temperature = min(target, new_temperature)
-
+            new_temperature = current + (
+                target - current
+            ) * AC_RATE
         else:
-            # Heating cannot actively cool
-            new_temperature = current + min(0, natural_change)
-            new_temperature = max(target, new_temperature)
+            new_temperature = current
 
     else:
         raise ValueError(f"Unknown AC mode: {room.ac_mode}")
