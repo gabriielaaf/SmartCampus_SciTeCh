@@ -1,10 +1,37 @@
-import random
+from simulation.occupancy import update_occupancy
+from simulation.temperature import update_temperature
+from simulation.humidity import update_humidity
+from simulation.co2 import update_co2
 
 
-def generate_sensor_data():
-    return {
-        "temperature": round(random.uniform(18, 35), 2),
-        "humidity": round(random.uniform(30, 80), 2),
-        "co2": random.randint(400, 1800)
-    }
+class Generator:
+    def __init__(self, campus):
+        self.campus = campus
 
+    def update(self):
+        changed_rooms = []
+
+        for room in self.campus.get_all_rooms():
+            old_state = (
+                room.people_count,
+                room.temperature,
+                room.humidity,
+                room.co2,
+            )
+
+            update_occupancy(room)
+            update_temperature(room)
+            update_humidity(room)
+            update_co2(room)
+
+            new_state = (
+                room.people_count,
+                room.temperature,
+                room.humidity,
+                room.co2,
+            )
+
+            if old_state != new_state:
+                changed_rooms.append(room)
+
+        return changed_rooms
