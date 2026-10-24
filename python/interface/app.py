@@ -285,6 +285,52 @@ def show_room_live(room_id):
         f"{room.co2:.0f} ppm"
     )
 
+    # ========================================================
+    # TARGET TEMPERATURE
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("🎯 Temperatura pretendida")
+
+    st.metric(
+        "Temperatura definida",
+        f"{room.target_temperature:.1f} °C"
+    )
+
+    with st.form(key=f"temperature_form_{room_id}"):
+
+        target_temp = st.slider(
+            "Escolher temperatura",
+            min_value=16.0,
+            max_value=30.0,
+            value=float(room.target_temperature),
+            step=0.5,
+            format="%.1f °C",
+            key=f"target_temp_{room_id}"
+        )
+
+        apply_temp = st.form_submit_button(
+            "Aplicar temperatura",
+            use_container_width=True
+        )
+
+    if apply_temp:
+
+        success = campus.mqtt_sync.send_command(
+            room_id,
+            "SET_AC",
+            {
+                "mode": room.ac_mode,
+                "temperature": target_temp
+            }
+        )
+
+        if success:
+            st.toast("Comando de temperatura enviado!", icon="✅")
+        else:
+            st.error("Não foi possível enviar o comando MQTT.")
+
     # --------------------------------------------------------
     # EQUIPMENT STATES
     # --------------------------------------------------------
