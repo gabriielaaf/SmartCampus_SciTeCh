@@ -28,6 +28,7 @@ class Classroom:
 
     # Configuration
     target_temperature: float = 22.0
+    manual_mode: bool = False
 
     # Novos atributos
     door_closed: bool = False
@@ -198,4 +199,5 @@ class Classroom:
             "alarm_reason": self.alarm_reason,
             "target_temperature": self.target_temperature,
             "last_updated": self.last_updated,
+            "manual_mode": self.manual_mode,
         }

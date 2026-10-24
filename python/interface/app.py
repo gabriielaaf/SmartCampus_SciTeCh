@@ -285,6 +285,149 @@ def show_room_live(room_id):
         f"{room.co2:.0f} ppm"
     )
 
+    # ========================================================
+    # MANUAL ROOM CONTROL
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("🛠️ Controlo manual da sala")
+
+    if room.manual_mode:
+        st.warning("⚙️ Simulação automática pausada nesta sala.")
+    else:
+        st.success("🟢 Simulação automática ativa.")
+
+    with st.expander("Editar valores da sala", expanded=False):
+
+        with st.form(key=f"manual_values_{room_id}"):
+
+            people_input = st.number_input(
+                "👥 Número de pessoas",
+                min_value=0,
+                max_value=room.capacity,
+                value=int(room.people_count),
+                step=1
+            )
+
+            temperature_input = st.number_input(
+                "🌡️ Temperatura atual (°C)",
+                min_value=-10.0,
+                max_value=50.0,
+                value=float(room.temperature),
+                step=0.5
+            )
+
+            humidity_input = st.number_input(
+                "💧 Humidade (%)",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(room.humidity),
+                step=1.0
+            )
+
+            co2_input = st.number_input(
+                "🌫️ CO₂ (ppm)",
+                min_value=0.0,
+                max_value=10000.0,
+                value=float(room.co2),
+                step=50.0
+            )
+
+            apply_values = st.form_submit_button(
+                "✅ Aplicar valores",
+                use_container_width=True
+            )
+
+        if apply_values:
+
+            success = campus.mqtt_sync.send_command(
+                room_id,
+                "SET_ROOM_VALUES",
+                {
+                    "count": int(people_input),
+                    "temperature": float(temperature_input),
+                    "humidity": float(humidity_input),
+                    "co2": float(co2_input)
+                }
+            )
+
+            if success:
+                st.toast(
+                    "Valores enviados ao simulador!",
+                    icon="✅"
+                )
+            else:
+                st.error("Erro ao enviar comando MQTT.")
+
+        if room.manual_mode:
+
+            if st.button(
+                "🔄 Voltar à simulação automática",
+                key=f"auto_mode_{room_id}",
+                use_container_width=True
+            ):
+
+                success = campus.mqtt_sync.send_command(
+                    room_id,
+                    "SET_ROOM_AUTO",
+                    {}
+                )
+
+                if success:
+                    st.toast(
+                        "Pedido de reativação enviado!",
+                        icon="🔄"
+                    )
+                else:
+                    st.error("Erro ao enviar comando MQTT.")
+
+    # ========================================================
+    # TARGET TEMPERATURE
+    # ========================================================
+
+    st.divider()
+
+    st.subheader("🎯 Temperatura pretendida")
+
+    st.metric(
+        "Temperatura definida",
+        f"{room.target_temperature:.1f} °C"
+    )
+
+    with st.form(key=f"temperature_form_{room_id}"):
+
+        target_temp = st.slider(
+            "Escolher temperatura",
+            min_value=16.0,
+            max_value=30.0,
+            value=float(room.target_temperature),
+            step=0.5,
+            format="%.1f °C",
+            key=f"target_temp_{room_id}"
+        )
+
+        apply_temp = st.form_submit_button(
+            "Aplicar temperatura",
+            use_container_width=True
+        )
+
+    if apply_temp:
+
+        success = campus.mqtt_sync.send_command(
+            room_id,
+            "SET_AC",
+            {
+                "mode": room.ac_mode,
+                "temperature": target_temp
+            }
+        )
+
+        if success:
+            st.toast("Comando de temperatura enviado!", icon="✅")
+        else:
+            st.error("Não foi possível enviar o comando MQTT.")
+
     # --------------------------------------------------------
     # EQUIPMENT STATES
     # --------------------------------------------------------
