@@ -92,6 +92,10 @@ def draw_floorplan(room) -> str:
 
     lights = bool(room.lights_on)
 
+    alarm = bool(room.alarm_on)
+
+    alarm_color = "#dc2626" if alarm else "#64748b"
+
     # Compatibilidade com código que ainda usa ac_on
     mode = room.ac_mode.removeprefix("ac_")
 
@@ -152,13 +156,15 @@ def draw_floorplan(room) -> str:
          data-ac-mode="{mode}"
          data-door-closed="{str(closed).lower()}"
          data-locked="{str(locked).lower()}"
+         data-alarm="{str(alarm).lower()}"
 
          style="
-             --light:{light_color};
-             --light-glow:{1 if lights else 0};
-             --ac-color:{ac_color};
-             --airflow:{1 if mode != 'off' else 0};
-             --door-color:{door_color}
+            --light:{light_color};
+            --light-glow:{1 if lights else 0};
+            --ac-color:{ac_color};
+            --airflow:{1 if mode != 'off' else 0};
+            --door-color:{door_color};
+            --alarm-color:{alarm_color}
          ">
 
       <!-- ================================================= -->
@@ -235,6 +241,15 @@ def draw_floorplan(room) -> str:
             .door-leaf {{
                 transition: none;
             }}
+        }}
+
+        .alarm-panel {{
+            fill: #ffffff;
+            transition: fill 0.2s ease;
+        }}
+
+        [data-alarm="true"] .alarm-panel {{
+            fill: #fee2e2;
         }}
 
       </style>
@@ -381,6 +396,79 @@ def draw_floorplan(room) -> str:
             fill="#6c7a8b">
         DOCENTE
       </text>
+
+        <!-- ================================================= -->
+        <!-- ALARM - CLICKABLE -->
+        <!-- ================================================= -->
+
+        <g class="device"
+        data-action="alarm_toggle"
+        tabindex="0"
+        role="button"
+        aria-label="Ativar ou desativar alarme">
+
+            <title>
+                Clicar para ativar ou desativar o alarme
+            </title>
+
+            <!-- Painel -->
+
+            <rect
+                x="717" y="45"
+                width="198" height="60"
+                rx="13"
+                class="alarm-panel"
+                stroke="var(--alarm-color)"
+                stroke-width="2"
+            />
+
+            <!-- Ícone de sirene -->
+
+            <path
+                d="M745 79h32l-6-8v-8a10 10 0 0 0-20 0v8z"
+                fill="none"
+                stroke="var(--alarm-color)"
+                stroke-width="3"
+                stroke-linejoin="round"
+            />
+
+            <circle
+                cx="761" cy="85"
+                r="3"
+                fill="var(--alarm-color)"
+            />
+
+            <!-- Texto -->
+
+            <text
+                x="794" y="70"
+                font-size="12"
+                font-weight="700"
+                fill="#475569"
+            >
+                ALARME
+            </text>
+
+            <text
+                x="794" y="91"
+                font-size="16"
+                font-weight="700"
+                fill="var(--alarm-color)"
+                data-status="alarm"
+            >
+                {'ATIVO' if alarm else 'Desligado'}
+            </text>
+
+            <!-- Área clicável -->
+
+            <rect
+                x="717" y="45"
+                width="198" height="60"
+                rx="13"
+                class="hotspot"
+            />
+
+        </g>
 
       <!-- ================================================= -->
       <!-- AIR CONDITIONER -->
