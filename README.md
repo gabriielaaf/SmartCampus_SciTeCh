@@ -20,6 +20,7 @@ The interface and backend run as **two separate processes**. They must connect t
 
 - Git
 - Python 3 with `venv` and `pip`
+- **Coreflux installed and running, with the required Coreflux deployments started**
 - An accessible **MQTT broker** (for example, the local Coreflux MQTT broker)
 - Optional: Mosquitto command-line clients to test MQTT
 
@@ -30,7 +31,7 @@ sudo apt update
 sudo apt install -y git python3 python3-venv python3-pip mosquitto-clients
 ```
 
-> **Broker note:** Installing `mosquitto-clients` provides testing commands (`mosquitto_pub` and `mosquitto_sub`); it does **not** install or start an MQTT broker. Start/configure your Coreflux broker separately, or use another compatible broker, before launching SmartCampus.
+> **Important:** Start the necessary **deployments in Coreflux** before running the SmartCampus Python applications. Installing `mosquitto-clients` provides testing commands only; it does **not** start Coreflux or an MQTT broker.
 
 ## 2. Clone the repository
 
@@ -118,9 +119,20 @@ chmod +x interface.sh start.sh
 
 No separate `interface/.venv` is needed.
 
-## 6. Run the application
+## 6. Start Coreflux deployments and run the application
 
-Start the MQTT broker first. Then use **two terminals** from the `python/` folder:
+### First — Start the Coreflux deployments (required)
+
+1. Open **Coreflux** and connect to your SmartCampus project/environment.
+2. Locate the project's **Deployments** section.
+3. **Run/start the required deployments** for your SmartCampus project, and confirm they are active. These deployments must be running for the Coreflux-side automation/integration to work.
+4. Make sure the MQTT broker used by Coreflux is available and matches the host, port, and credentials in `python/config.py`.
+
+> **Do not skip this step.** The Python scripts do **not** automatically run Coreflux deployments. The exact deployment names depend on your Coreflux project.
+
+### Next — Start the Python applications
+
+After the Coreflux deployments and broker are running, use **two terminals** from the `python/` folder:
 
 ### Terminal 1 — Backend / simulation
 
@@ -224,7 +236,7 @@ Install the packages into the *same* `.venv` you use to start the application (S
 
 **`Connection refused` or no “Connected to Coreflux!” message**
 
-The MQTT broker may not be running at the configured host/port. Verify `config.py`, broker status, and network access.
+Verify Coreflux is running, start the required Coreflux deployments, and check `config.py`, broker status, and network access. Note that an MQTT connection alone does not prove the Coreflux deployments are active.
 
 **The interface changes visually, but the backend doesn't receive a command**
 
@@ -250,4 +262,4 @@ The current temperature must be below the heating target for heating, or above t
 - `python/interface/mqtt_sync.py` — interface MQTT state sync and command sending
 - `python/config.py` — broker settings and MQTT topic constants
 
-> This README reflects the public `master` branch as checked on 24 October 2026. Coreflux installation/startup itself is environment-specific; the repository's Python scripts assume an MQTT broker is already accessible.
+> Coreflux installation and the names of the required deployments are environment-specific. **Start the project deployments in Coreflux before running `./start.sh` and `./interface.sh`.** The Python scripts assume the MQTT broker is accessible and do not manage Coreflux deployments.
