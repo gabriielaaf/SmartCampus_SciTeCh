@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from mqtt_sync import CampusMQTTSync
 
 import streamlit as st
 
@@ -35,8 +36,12 @@ st.set_page_config(
 
 @st.cache_resource
 def get_campus():
-    return create_campus()
 
+    campus = create_campus()
+
+    campus.mqtt_sync = CampusMQTTSync(campus)
+
+    return campus
 
 campus = get_campus()
 

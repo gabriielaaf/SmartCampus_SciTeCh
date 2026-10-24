@@ -427,47 +427,37 @@ def render_interactive_floorplan(room, campus):
 
         result = st.session_state.get(widget_key)
 
-        action = getattr(
-            result,
-            "action",
-            None
-        )
+        action = getattr(result, "action", None)
 
         current = campus.get_room(room_id)
 
         if current is None:
             return
 
-        # -----------------------------------------------
-        # LIGHTS
-        # -----------------------------------------------
+        mqtt_sync = campus.mqtt_sync
 
         if action == "lights_toggle":
 
-            current.set_lights(
-                not current.lights_on
+            mqtt_sync.send_command(
+                room_id,
+                "SET_LIGHTS",
+                {"enabled": not current.lights_on}
             )
 
-        # -----------------------------------------------
-        # AIR CONDITIONER
-        # -----------------------------------------------
+        elif action in ("ac_off", "ac_cool", "ac_heat"):
 
-        elif action in (
-            "ac_off",
-            "ac_cool",
-            "ac_heat"
-        ):
-
-            current.set_ac(action)
-
-        # -----------------------------------------------
-        # DOOR
-        # -----------------------------------------------
+            mqtt_sync.send_command(
+                room_id,
+                "SET_AC",
+                {"mode": action}
+            )
 
         elif action == "door_toggle":
 
-            current.set_door_lock(
-                not current.door_locked
+            mqtt_sync.send_command(
+                room_id,
+                "SET_DOOR",
+                {"locked": not current.door_locked}
             )
 
     # ========================================================
