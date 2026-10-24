@@ -1,4 +1,3 @@
-import ssl
 import paho.mqtt.client as mqtt
 
 from config import BROKER, PORT, USERNAME, PASSWORD, COMMAND_TOPIC
@@ -40,7 +39,6 @@ def on_message(client, userdata, msg):
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
 client.username_pw_set(USERNAME, PASSWORD)
-client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
 
 client.on_connect = on_connect
 client.on_message = on_message

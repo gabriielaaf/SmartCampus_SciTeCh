@@ -1,10 +1,14 @@
-# Coreflux Cloud
-BROKER = "i35e21c123e.eu1.coreflux.cloud"
-PORT = 8883
+# Coreflux Local Connection
+BROKER = "localhost"
+PORT = 1883
 
-USERNAME = "admin"
-PASSWORD = "lK9Ez1R02N1U3qD7Y7E8ijhq"
+USERNAME = "root"
+PASSWORD = "coreflux"
 
 # MQTT Topics
-SENSOR_TOPIC = "sensors/room1"
-COMMAND_TOPIC = "building/room1/commands"
+
+# Base topic for publishing classroom states
+SENSOR_TOPIC = "campus/rooms"
+
+# Subscribe to commands for ALL classrooms
+COMMAND_TOPIC = "campus/rooms/+/commands"

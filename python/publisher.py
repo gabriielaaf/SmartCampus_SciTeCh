@@ -1,6 +1,5 @@
 import json
 import time
-import ssl
 import paho.mqtt.client as mqtt
 
 from config import BROKER, PORT, USERNAME, PASSWORD, SENSOR_TOPIC
@@ -17,7 +16,6 @@ def on_connect(client, userdata, flags, reason_code, properties):
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
 client.username_pw_set(USERNAME, PASSWORD)
-client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
 
 client.on_connect = on_connect
 
