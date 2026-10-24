@@ -2,11 +2,9 @@ def update_temperature(room):
     """
     Simulate classroom temperature.
 
-    Rules:
-    - AC OFF: temperature approaches ambient + occupant heat.
-    - AC COOL: temperature decreases toward the target.
-    - AC HEAT: temperature increases toward the target.
-    - AC never moves temperature in the wrong direction.
+    - AC OFF: slowly approaches natural room temperature.
+    - AC COOL: actively decreases temperature toward target.
+    - AC HEAT: actively increases temperature toward target.
     """
 
     # ----------------------------------
@@ -15,9 +13,8 @@ def update_temperature(room):
 
     AMBIENT_TEMPERATURE = 23.0
 
-    # Accelerated rates for the simulation
-    NATURAL_RATE = 0.08
-    AC_RATE = 0.30
+    AC_SPEED = 0.35
+    NATURAL_SPEED = 0.04
 
     # ----------------------------------
     # TEMPERATURE VALUES
@@ -34,19 +31,27 @@ def update_temperature(room):
     # ----------------------------------
 
     if room.ac_mode == "ac_off":
-        new_temperature = current + (
-            natural_target - current
-        ) * NATURAL_RATE
+
+        difference = natural_target - current
+
+        change = max(
+            -NATURAL_SPEED,
+            min(NATURAL_SPEED, difference)
+        )
+
+        new_temperature = current + change
 
     # ----------------------------------
     # AC COOL
     # ----------------------------------
 
     elif room.ac_mode == "ac_cool":
+
         if current > target:
-            new_temperature = current + (
-                target - current
-            ) * AC_RATE
+            new_temperature = max(
+                target,
+                current - AC_SPEED
+            )
         else:
             new_temperature = current
 
@@ -55,10 +60,12 @@ def update_temperature(room):
     # ----------------------------------
 
     elif room.ac_mode == "ac_heat":
+
         if current < target:
-            new_temperature = current + (
-                target - current
-            ) * AC_RATE
+            new_temperature = min(
+                target,
+                current + AC_SPEED
+            )
         else:
             new_temperature = current
 
