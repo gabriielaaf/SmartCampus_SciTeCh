@@ -1,9 +1,9 @@
 # Coreflux Cloud
-BROKER = "i35e21c123e.eu1.coreflux.cloud"
-PORT = 8883
+BROKER = "localhost"
+PORT = 1883
 
-USERNAME = "admin"
-PASSWORD = "lK9Ez1R02N1U3qD7Y7E8ijhq"
+USERNAME = "root"
+PASSWORD = "coreflux"
 
 # MQTT Topics
 SENSOR_TOPIC = "sensors/room1"
