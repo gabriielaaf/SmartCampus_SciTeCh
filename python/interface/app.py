@@ -98,17 +98,43 @@ def show_building_live():
 
     st.divider()
 
+    st.html("""
+    <style>
+        [class*="st-key-alarm_room_"] {
+            background-color: rgba(239, 68, 68, 0.20) !important;
+            border: 2px solid #ef4444 !important;
+            border-radius: 14px;
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.18);
+        }
+
+        [class*="st-key-alarm_room_"] h3 {
+            color: #ef4444 !important;
+        }
+    </style>
+    """)
+
     columns = st.columns(3)
 
     for index, room in enumerate(rooms):
 
         with columns[index % 3]:
 
-            with st.container(border=True):
+            with st.container(
+                border=True,
+                key=(
+                    f"alarm_room_{room.room_id}"
+                    if room.alarm_on
+                    else f"normal_room_{room.room_id}"
+                )
+            ):
 
                 st.subheader(
                     f"🚪 Sala {room.room_id}"
                 )
+
+                if room.alarm_on:
+
+                    st.error("🚨 ALARME ATIVO")
 
                 st.metric(
                     "Ocupação",
@@ -192,6 +218,13 @@ def show_room_live(room_id):
         room,
         campus
     )
+
+    if room.alarm_on:
+
+        st.error(
+            f"🚨 ALARME ATIVO — "
+            f"{room.alarm_reason or 'Alarme ativado'}"
+        )
 
     st.caption(
         "Clica nas luzes, no AC ou na porta. "

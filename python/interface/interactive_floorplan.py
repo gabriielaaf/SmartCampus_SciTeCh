@@ -198,6 +198,24 @@ _floorplan_component = st.components.v2.component(
 
                 }
 
+                // ALARM
+                else if (name === 'alarm') {
+
+                    svg.dataset.alarm = String(value);
+
+                    svg.style.setProperty(
+                        '--alarm-color',
+                        value ? '#dc2626' : '#64748b'
+                    );
+
+                    writeStatus(
+                        svg,
+                        'alarm',
+                        value ? 'ATIVO' : 'Desligado'
+                    );
+
+                }
+
                 // DOOR COLOR
                 if (
                     name === 'door' ||
@@ -350,6 +368,23 @@ _floorplan_component = st.components.v2.component(
 
                 }
 
+                else if (action === 'alarm_toggle') {
+
+                    const enabled =
+                        svg.dataset.alarm !== 'true';
+
+                    updateAppearance(
+                        svg,
+                        'alarm',
+                        enabled
+                    );
+
+                    hint.textContent = enabled
+                        ? '🚨 Alarme ativado!'
+                        : 'Alarme desativado.';
+
+                }
+
 
                 // -------------------------------------------
                 // LOCK / UNLOCK DOOR
@@ -460,6 +495,22 @@ def render_interactive_floorplan(room, campus):
                 {"locked": not current.door_locked}
             )
 
+        elif action == "alarm_toggle":
+
+            enabled = not current.alarm_on
+
+            mqtt_sync.send_command(
+                room_id,
+                "SET_ALARM",
+                {
+                    "enabled": enabled,
+                    "reason": (
+                        "Ativado manualmente pela interface"
+                        if enabled
+                        else None
+                    ),
+                }
+            )
     # ========================================================
     # RENDER COMPONENT
     # ========================================================
