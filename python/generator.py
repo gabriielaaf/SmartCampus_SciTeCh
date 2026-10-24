@@ -15,6 +15,10 @@ class Generator:
 
             # Não alterar salas em modo manual
             if room.manual_mode:
+                # Em modo manual, só o AC pode alterar a temperatura
+                if room.ac_mode != "ac_off":
+                    update_temperature(room)
+
                 continue
 
             old_state = (

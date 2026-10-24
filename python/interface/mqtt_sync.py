@@ -109,7 +109,14 @@ class CampusMQTTSync:
                 type(people) is int
                 and 0 <= people <= room.capacity
             ):
+            
                 room.people_count = people
+
+            # Modo manual
+            manual_mode = state.get("manual_mode")
+
+            if type(manual_mode) is bool:
+                room.manual_mode = manual_mode
 
             # Ar condicionado
             mode = state.get("ac_mode")
